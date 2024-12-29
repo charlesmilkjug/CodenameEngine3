@@ -15,11 +15,15 @@ class OptionsScreen extends FlxTypedSpriteGroup<OptionType> {
 	public var name:String;
 	public var desc:String;
 
+	var timeSinceFocus:Float = 0; 
+
 	public function new(name:String, desc:String, ?options:Array<OptionType>) {
 		super();
 		this.name = name;
 		this.desc = desc;
 		if (options != null) for(o in options) add(o);
+
+		FlxG.signals.focusGained.add(onFocus);
 	}
 
 	public override function update(elapsed:Float) {
@@ -45,7 +49,7 @@ class OptionsScreen extends FlxTypedSpriteGroup<OptionType> {
 
 		if (members.length > 0) {
 			members[curSelected].selected = true;
-			if (controls.ACCEPT || FlxG.mouse.justReleased)
+			if (controls.ACCEPT || (FlxG.mouse.justReleased && timeSinceFocus > 0.25))
 				members[curSelected].onSelect();
 			if (controls.LEFT_P)
 				members[curSelected].onChangeSelection(-1);
@@ -54,10 +58,22 @@ class OptionsScreen extends FlxTypedSpriteGroup<OptionType> {
 		}
 		if (controls.BACK || FlxG.mouse.justReleasedRight)
 			close();
+
+		if(timeSinceFocus < 1)
+			timeSinceFocus += elapsed;
 	}
 
 	public function close() {
 		onClose(this);
+	}
+
+	public function onFocus() {
+		timeSinceFocus = 0;
+	}
+
+	override public function destroy():Void
+	{
+		FlxG.signals.focusGained.remove(onFocus);
 	}
 
 	public function changeSelection(sel:Int, force:Bool = false) {
