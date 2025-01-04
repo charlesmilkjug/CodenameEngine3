@@ -1,7 +1,5 @@
 package funkin.backend.internet;
 
-import haxe.io.Bytes;
-
 import hx.ws.*;
 
 import funkin.backend.system.Logs;
@@ -48,7 +46,17 @@ class WebSocketUtil implements IFlxDestroyable {
 	/**
 	* Runs whenever the WebSocket encounters an error.
 	**/
-	public var onError:Dynamic->Void = (error)->{};
+	public var onError(default, set):Dynamic->Void = (error)->{};
+	private function set_onError(_errorFunc):Dynamic->Void {
+		var func = (error)->{
+			Logs.traceColored([
+				Logs.logText("[WebSocket Error] ", RED),
+				Logs.logText('${error}'),
+			], ERROR);
+			if (_errorFunc != null) _errorFunc(error);
+		};
+		return this.onError = func;
+	}
 
 	@:dox(hide) private var url:String;
 	@:dox(hide) private var webSocket:WebSocket;
@@ -60,16 +68,16 @@ class WebSocketUtil implements IFlxDestroyable {
 	**/
     public function new(url:String, ?onOpen:WebSocket->Void, ?immediateOpen:Bool = false) {
 		this.onOpen = (onOpen == null) ? this.onOpen : onOpen;
+		this.onError = this.onError;
 
 		this.url = url;
 		this.webSocket = new WebSocket(this.url, false);
 
-		// TODO: make trace print colors with `Logs.hx`
         this.webSocket.onopen = function() {
 			try {
 				this.onOpen(webSocket);
-			} catch(e) {
-				trace('Error: ${e}');
+			} catch(error) {
+				this.onError(error);
 			}
         };
 
@@ -84,7 +92,7 @@ class WebSocketUtil implements IFlxDestroyable {
 				}
 				this.onMessage(data);
 			} catch(e) {
-				trace('Error: ${e}');
+				this.onError(e);
 			}
         };
 
@@ -92,32 +100,26 @@ class WebSocketUtil implements IFlxDestroyable {
 			try {
 				this.onClose();
 			} catch(e) {
-				trace('Error: ${e}');
+				this.onError(e);
 			}
         };
 
-        this.webSocket.onerror = function(error) {
-			trace('Websocket error: ${error}');
-			try {
-				this.onError(error);
-			} catch(e) {
-				trace('Error: ${e}');
-			}
-        };
+        this.webSocket.onerror = this.onError;
 		
 		if (immediateOpen) this.open();
-		return this;
     }
 
 	/**
 	* Opens the WebSocket.
 	**/
 	public function open() {
-		trace('[Connection Status] Connecting to ${this.url}');
+		Logs.traceColored([
+			Logs.logText("[WebSocket Connection] ", BLUE),
+			Logs.logText('Connecting to ${this.url}'),
+		], INFO);
 		try {
 			this.webSocket.open();
 		} catch(e) {
-			trace("Failed to open websocket: " + e);
 			this.onError(e);
 		}
 	}
@@ -126,11 +128,14 @@ class WebSocketUtil implements IFlxDestroyable {
 	* Closes the WebSocket.
 	**/
 	public function close() {
-		trace('[Connection Status] Closing connection to ${this.url}');
+		Logs.traceColored([
+			Logs.logText("[WebSocket Connection] ", BLUE),
+			Logs.logText('Closing connection to ${this.url}'),
+		], INFO);
 		try {
 			this.webSocket.close();
 		} catch(e) {
-			trace("Failed to close websocket: " + e);
+			this.onError(e);
 		}
 	}
 
@@ -141,7 +146,6 @@ class WebSocketUtil implements IFlxDestroyable {
 		try {
 			this.webSocket.send(data);
 		} catch(e) {
-			trace("Failed to send data to websocket: " + e);
 			this.onError(e);
 		}
 	}
