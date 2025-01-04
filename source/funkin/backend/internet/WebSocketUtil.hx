@@ -1,14 +1,20 @@
 package funkin.backend.internet;
 
 import haxe.io.Bytes;
-import hx.ws.Log;
-import hx.ws.WebSocket;
+
+import hx.ws.*;
 
 import funkin.backend.system.Logs;
 
 class WebSocketUtil implements IFlxDestroyable {
-
+	/**
+	* Used for the `toggleLogging` function. this is more of a data handler for the function.
+	**/
 	static var loggingEnabled:Bool = false;
+	
+	/**
+	* Call this function to toggle debugging for the WebSocket.
+	**/
 	static function toggleLogging(?INFO:Bool = true, ?DEBUG:Bool = true, ?DATA:Bool = true) {
 		loggingEnabled = !loggingEnabled;
 		if (!loggingEnabled) return Log.mask = 0;
@@ -22,13 +28,36 @@ class WebSocketUtil implements IFlxDestroyable {
 		return Log.mask;
 	}
 
+	/**
+	* Function calls after the WebSocket has been opened.
+	* @param webSocket Returns the instance of the WebSocket.
+	**/
 	public var onOpen:WebSocket->Void = (webSocket)->{};
-	public var onMessage:Void->Void = ()->{};
+	
+	/**
+	* Whenever the WebSocket receives a message sent from the server.
+	* @param message Returns the message sent from the server.
+	**/
+	public var onMessage:Dynamic->Void = (message)->{};
+	
+	/**
+	* Runs whenever the WebSocket closes.
+	**/
 	public var onClose:Void->Void = ()->{};
+	
+	/**
+	* Runs whenever the WebSocket encounters an error.
+	**/
 	public var onError:Dynamic->Void = (error)->{};
 
-	private var url:String;
-	private var webSocket:WebSocket;
+	@:dox(hide) private var url:String;
+	@:dox(hide) private var webSocket:WebSocket;
+	
+	/**
+	* @param url The URL of the WebSocket. Usually `ws://localhost:port`.
+	* @param onOpen sets the `onOpen` function directly to the class.
+	* @param immediateOpen If true, the WebSocket will open immediately. Hence why `onOpen` is a function in the parameters.
+	**/
     public function new(url:String, ?onOpen:WebSocket->Void, ?immediateOpen:Bool = false) {
 		this.onOpen = (onOpen == null) ? this.onOpen : onOpen;
 
@@ -45,8 +74,15 @@ class WebSocketUtil implements IFlxDestroyable {
         };
 
         this.webSocket.onmessage = function(message) {
+			var data:Dynamic = null;
 			try {
-				this.onMessage();
+				switch(message) {
+					case StrMessage(str):
+						data = str;
+					case BytesMessage(bytes):
+						data = bytes;
+				}
+				this.onMessage(data);
 			} catch(e) {
 				trace('Error: ${e}');
 			}
@@ -70,8 +106,12 @@ class WebSocketUtil implements IFlxDestroyable {
         };
 		
 		if (immediateOpen) this.open();
+		return this;
     }
 
+	/**
+	* Opens the WebSocket.
+	**/
 	public function open() {
 		trace('[Connection Status] Connecting to ${this.url}');
 		try {
@@ -82,6 +122,9 @@ class WebSocketUtil implements IFlxDestroyable {
 		}
 	}
 
+	/**
+	* Closes the WebSocket.
+	**/
 	public function close() {
 		trace('[Connection Status] Closing connection to ${this.url}');
 		try {
@@ -91,14 +134,21 @@ class WebSocketUtil implements IFlxDestroyable {
 		}
 	}
 
-	public function send(data:String) {
+	/**
+	* Sends data to the server
+	**/
+	public function send(data) {
 		try {
 			this.webSocket.send(data);
 		} catch(e) {
 			trace("Failed to send data to websocket: " + e);
+			this.onError(e);
 		}
 	}
 
+	/**
+	* Closes the WebSocket and destroys the class instance.
+	**/
 	public function destroy() {
 		this.webSocket.close();
 	}
