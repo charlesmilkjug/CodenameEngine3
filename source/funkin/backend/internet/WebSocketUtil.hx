@@ -4,6 +4,13 @@ import hx.ws.*;
 
 import funkin.backend.system.Logs;
 
+/**
+* Basically a Utility for HScript to use WebSockets. Adds safeguards, error handling, and logging to debug your WebSockets.
+* ItsLJcool wanted to make CodenameEngine Online / Multiplayer. This will make it easier to do so.
+*
+* This does NOT support making a Server Side WebSocket. Its only for Client Side WebSockets. If you want to make a Server you need to that yourself.
+* I'd suggest using JavaScript for it. Though any program will do.
+**/
 class WebSocketUtil implements IFlxDestroyable {
 	/**
 	* Used for the `toggleLogging` function. this is more of a data handler for the function.
