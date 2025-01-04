@@ -66,22 +66,22 @@ class WebSocketUtil implements IFlxDestroyable {
 	* @param onOpen sets the `onOpen` function directly to the class.
 	* @param immediateOpen If true, the WebSocket will open immediately. Hence why `onOpen` is a function in the parameters.
 	**/
-    public function new(url:String, ?onOpen:WebSocket->Void, ?immediateOpen:Bool = false) {
+	public function new(url:String, ?onOpen:WebSocket->Void, ?immediateOpen:Bool = false) {
 		this.onOpen = (onOpen == null) ? this.onOpen : onOpen;
 		this.onError = this.onError;
 
 		this.url = url;
 		this.webSocket = new WebSocket(this.url, false);
 
-        this.webSocket.onopen = function() {
+		this.webSocket.onopen = function() {
 			try {
 				this.onOpen(webSocket);
 			} catch(error) {
 				this.onError(error);
 			}
-        };
+		};
 
-        this.webSocket.onmessage = function(message) {
+		this.webSocket.onmessage = function(message) {
 			var data:Dynamic = null;
 			try {
 				switch(message) {
@@ -94,20 +94,20 @@ class WebSocketUtil implements IFlxDestroyable {
 			} catch(e) {
 				this.onError(e);
 			}
-        };
+		};
 
-        this.webSocket.onclose = function() {
+		this.webSocket.onclose = function() {
 			try {
 				this.onClose();
 			} catch(e) {
 				this.onError(e);
 			}
-        };
+		};
 
-        this.webSocket.onerror = this.onError;
+		this.webSocket.onerror = this.onError;
 		
 		if (immediateOpen) this.open();
-    }
+	}
 
 	/**
 	* Opens the WebSocket.
@@ -157,4 +157,3 @@ class WebSocketUtil implements IFlxDestroyable {
 		this.webSocket.close();
 	}
 }
-
