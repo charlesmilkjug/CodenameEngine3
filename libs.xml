@@ -4,6 +4,9 @@
 	<lib name="openfl" version="9.2.2" />
 	<lib name="lime"  version="8.1.2" />
 
+	<!-- idek man -->
+	<lib name="hxWebSockets" version="1.4.0" />
+
 	<!-- Flixel -->
 	<git name="flixel" url="https://github.com/CodenameCrew/cne-flixel" />
 	<git name="flixel-addons" url="https://github.com/CodenameCrew/cne-flixel-addons" />
