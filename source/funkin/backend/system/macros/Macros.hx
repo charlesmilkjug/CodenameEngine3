@@ -40,8 +40,8 @@ class Macros {
 			}
 		}
 
+		Compiler.include("hx.ws", ["hx.ws.cs", "hx.ws.java", "hx.ws.nodejs"]);
 		Compiler.include("funkin", [#if !UPDATE_CHECKING 'funkin.backend.system.updating' #end]);
-		// Compiler.include("hx.ws", [#if !UPDATE_CHECKING 'cs.system.net.sockets' #end]); // idk what im doing neo
 	}
 
 	public static function initMacros() {
