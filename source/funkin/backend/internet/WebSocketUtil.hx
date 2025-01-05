@@ -37,7 +37,7 @@ class WebSocketUtil implements IFlxDestroyable {
 	* Function calls after the WebSocket has been opened.
 	* @param webSocket Returns the instance of the WebSocket.
 	**/
-	public var onOpen:WebSocket->Void = (webSocket)->{};
+	public var onOpen:WebSocketUtil->Void = (webSocket)->{};
 	
 	/**
 	* Whenever the WebSocket receives a message sent from the server.
@@ -73,7 +73,7 @@ class WebSocketUtil implements IFlxDestroyable {
 	* @param onOpen sets the `onOpen` function directly to the class.
 	* @param immediateOpen If true, the WebSocket will open immediately. Hence why `onOpen` is a function in the parameters.
 	**/
-	public function new(url:String, ?onOpen:WebSocket->Void, ?immediateOpen:Bool = false) {
+	public function new(url:String, ?onOpen:WebSocketUtil->Void, ?immediateOpen:Bool = false) {
 		this.onOpen = (onOpen == null) ? this.onOpen : onOpen;
 		this.onError = this.onError;
 
@@ -82,7 +82,7 @@ class WebSocketUtil implements IFlxDestroyable {
 
 		this.webSocket.onopen = function() {
 			try {
-				this.onOpen(webSocket);
+				this.onOpen(this);
 			} catch(error) {
 				this.onError(error);
 			}
@@ -150,6 +150,7 @@ class WebSocketUtil implements IFlxDestroyable {
 	* Sends data to the server
 	**/
 	public function send(data) {
+		if (data is WebSocketPacket) data = data.toString();
 		try {
 			this.webSocket.send(data);
 		} catch(e) {
