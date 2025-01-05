@@ -107,10 +107,10 @@ class WebSocketPacket {
 		if (packetEventName != "") {
 			buffer.add('!HXP');
 			buffer.add(this.packetEventName);
+			buffer.add('=>');
 		} else {
 			buffer.add('!HXp');
 		}
-		buffer.add('=>');
 
 		if (add_meta_data) this.packetData.__timestamp = Date.now().getTime();
 
