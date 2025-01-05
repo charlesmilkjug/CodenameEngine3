@@ -6,6 +6,7 @@ import funkin.backend.system.Logs;
 
 /**
 * Basically a Utility for HScript to use WebSockets. Adds safeguards, error handling, and logging to debug your WebSockets.
+* YOU WILL NEED TO HANDLE HOW THE WEBSOCKETS ARE CLOSED!!! calling `destroy` will close the WebSocket.
 * ItsLJcool wanted to make CodenameEngine Online / Multiplayer. This will make it easier to do so.
 *
 * This does NOT support making a Server Side WebSocket. Its only for Client Side WebSockets. If you want to make a Server you need to that yourself.
@@ -162,6 +163,6 @@ class WebSocketUtil implements IFlxDestroyable {
 	* Closes the WebSocket and destroys the class instance.
 	**/
 	public function destroy() {
-		this.webSocket.close();
+		this.close();
 	}
 }
