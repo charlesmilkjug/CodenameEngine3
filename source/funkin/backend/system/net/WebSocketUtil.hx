@@ -1,4 +1,4 @@
-package funkin.backend.internet;
+package funkin.backend.system.net;
 
 import hx.ws.*;
 
@@ -17,7 +17,7 @@ class WebSocketUtil implements IFlxDestroyable {
 	* Used for the `toggleLogging` function. this is more of a data handler for the function.
 	**/
 	static var loggingEnabled:Bool = false;
-	
+
 	/**
 	* Call this function to toggle debugging for the WebSocket.
 	**/
@@ -39,18 +39,18 @@ class WebSocketUtil implements IFlxDestroyable {
 	* @param webSocket Returns the instance of the WebSocket.
 	**/
 	public var onOpen:WebSocketUtil->Void = (webSocket)->{};
-	
+
 	/**
 	* Whenever the WebSocket receives a message sent from the server.
 	* @param message Returns the message sent from the server.
 	**/
 	public var onMessage:Dynamic->Void = (message)->{};
-	
+
 	/**
 	* Runs whenever the WebSocket closes.
 	**/
 	public var onClose:Void->Void = ()->{};
-	
+
 	/**
 	* Runs whenever the WebSocket encounters an error.
 	**/
@@ -68,7 +68,7 @@ class WebSocketUtil implements IFlxDestroyable {
 
 	@:dox(hide) private var url:String;
 	@:dox(hide) private var webSocket:WebSocket;
-	
+
 	/**
 	* @param url The URL of the WebSocket. Usually `ws://localhost:port`.
 	* @param onOpen sets the `onOpen` function directly to the class.
@@ -113,7 +113,7 @@ class WebSocketUtil implements IFlxDestroyable {
 		};
 
 		this.webSocket.onerror = this.onError;
-		
+
 		if (immediateOpen) this.open();
 	}
 
