@@ -1,4 +1,4 @@
-package funkin.backend.internet;
+package funkin.backend.system.net;
 
 import funkin.backend.assets.ModsFolder;
 import funkin.backend.system.macros.GitCommitMacro;
@@ -24,7 +24,7 @@ class WebSocketPacket {
 	* Just normal data that is being held for the packet to get stringified.
 	**/
 	private var packetData:Dynamic = {};
-	
+
 	/**
 	* The name of the event the server handles.
 	* If null it won't be added in the packet.
@@ -52,9 +52,9 @@ class WebSocketPacket {
 		} catch (e:Dynamic) {
 			trace("Error parsing string data to packet: " + e);
 		}
-		
+
 		this.packetData = packetData;
-		
+
 		if (this.add_meta_data) {
 			try {
 				if (ModsFolder.currentModFolder != null) this.packetData.__mod = ModsFolder.currentModFolder;
