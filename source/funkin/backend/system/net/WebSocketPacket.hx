@@ -107,7 +107,6 @@ class WebSocketPacket {
 		var buffer = new StringBuf();
 
 		// if no name is associated with packet, just serialize the data
-		trace("this.packetEventName.trim(): " + this.packetEventName.trim());
 		if (this.packetEventName.trim() != "") {
 			buffer.add('!HXP');
 			buffer.add(this.packetEventName);
