@@ -9,7 +9,7 @@ import haxe.Serializer;
 import Date;
 import StringBuf;
 import String;
-import Reflect;
+import Type;
 
 /**
 * A data object that can be customized for `WebSocketUtil` to send data to the server.
@@ -24,15 +24,20 @@ class WebSocketPacket {
 	/**
 	* Just normal data that is being held for the packet to get stringified.
 	**/
-	private var packetData:Dynamic = {};
+	private var packetData(default, set):Dynamic = {};
+	private function set_packetData(value:Dynamic):Dynamic {
+		if (value == null) return {};
+		if (value is String) value = haxe.Json.parse(value);
+		return this.packetData = value;
+	}
 
 	/**
 	* The name of the event the server handles.
 	* If null it won't be added in the packet.
 	**/
 	public var packetEventName(default, set):String;
-	private function set_packetEventName(value:String):String {
-		if (value == null) return "";
+	private function set_packetEventName(value:Null<String>):String {
+		if (value == null) return this.packetEventName = "";
 		return this.packetEventName = value;
 	}
 
@@ -43,16 +48,9 @@ class WebSocketPacket {
 	* @param packetData The data that is being sent to the server. Can also be a stringified JSON.
 	* @param add_meta_data If true, adds metadata to the packet. This is useful for data like the time it was sent, 
 	**/
-	public function new(packetName:Null<String>, packetData:Dynamic, ?_add_meta_data:Bool = true) {
+	public function new(packetName:Null<String>, ?packetData:Null<Dynamic>, ?_add_meta_data:Bool = true) {
 		this.packetEventName = packetName;
 		this.add_meta_data = _add_meta_data;
-
-		// in case ig
-		try {
-			if (packetData is String) packetData = haxe.Json.parse(packetData);
-		} catch (e:Dynamic) {
-			trace("Error parsing string data to packet: " + e);
-		}
 
 		this.packetData = packetData;
 
@@ -106,11 +104,11 @@ class WebSocketPacket {
 	* @return The packet as a string.
 	**/
 	public function toString():String {
-		var cerial = new Serializer();
 		var buffer = new StringBuf();
 
 		// if no name is associated with packet, just serialize the data
-		if (packetEventName != "") {
+		trace("this.packetEventName.trim(): " + this.packetEventName.trim());
+		if (this.packetEventName.trim() != "") {
 			buffer.add('!HXP');
 			buffer.add(this.packetEventName);
 			buffer.add('=>');
@@ -120,7 +118,8 @@ class WebSocketPacket {
 
 		if (add_meta_data) this.packetData.__timestamp = Date.now();
 
-		cerial.serialize(this.packetData);
+		var cerial = new Serializer();
+		if (this.packetData != {}) cerial.serialize(this.packetData);
 		return '${buffer.toString()}${cerial.toString()}';
 	}
 }
