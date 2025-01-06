@@ -2,6 +2,7 @@ package funkin.backend.system.net;
 
 import funkin.backend.assets.ModsFolder;
 import funkin.backend.system.macros.GitCommitMacro;
+import funkin.backend.utils.DiscordUtil;
 
 import haxe.Serializer;
 
@@ -59,6 +60,11 @@ class WebSocketPacket {
 			try {
 				if (ModsFolder.currentModFolder != null) this.packetData.__mod = ModsFolder.currentModFolder;
 				this.packetData.__commitHash = GitCommitMacro.commitHash; // for checking outdated action builds on the server. its gonna be peak trust.
+				this.packetData.__discord = {
+					username: DiscordUtil.user.username,
+					globalName: DiscordUtil.user.globalName,
+					premiumType: DiscordUtil.user.premiumType,	
+				};
 			} catch (e:Dynamic) {
 				trace("Error adding metadata to packet: " + e);
 			}
@@ -112,7 +118,7 @@ class WebSocketPacket {
 			buffer.add('!HXp');
 		}
 
-		if (add_meta_data) this.packetData.__timestamp = Date.now().getTime();
+		if (add_meta_data) this.packetData.__timestamp = Date.now();
 
 		cerial.serialize(this.packetData);
 		return '${buffer.toString()}${cerial.toString()}';
