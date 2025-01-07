@@ -58,11 +58,8 @@ class WebSocketPacket {
 			try {
 				if (ModsFolder.currentModFolder != null) this.packetData.__mod = ModsFolder.currentModFolder;
 				this.packetData.__commitHash = GitCommitMacro.commitHash; // for checking outdated action builds on the server. its gonna be peak trust.
-				this.packetData.__discord = {
-					username: DiscordUtil.user.username,
-					globalName: DiscordUtil.user.globalName,
-					premiumType: DiscordUtil.user.premiumType,	
-				};
+				// if Discord isn't active, dont send the metadata
+				if (DiscordUtil.ready) this.packetData.__discord = { username: DiscordUtil.user.username, globalName: DiscordUtil.user.globalName, premiumType: DiscordUtil.user.premiumType };
 			} catch (e:Dynamic) {
 				trace("Error adding metadata to packet: " + e);
 			}
