@@ -21,6 +21,24 @@ import Type;
 * Why use a packet class instead of sending your own data? Well this Serializes the data and handles it for you, so all you do is just send the class in the `WebSocketUtil.send` and thats it.
 **/
 class WebSocketPacket {
+
+	/**
+	* Packet Types that can be gathered from the server. Used by `WebSocketUtil`
+	* If your server doesn't use the Template ItsLJcool made, then you add your own here.
+	**/
+	public static var packetTypes:Map<String, Dynamic> = [
+		"haxe" => {params: "!HXP", none: "!HXp"},
+		"javascript" => {params: "!JSP", none: "!JSp"},
+		"js" => {params: "!JSP", none: "!JSp"},
+	];
+
+	@:dox(hide)
+	public static var default_packetTypes(default, never):Map<String, Dynamic> = [
+		"haxe" => {params: "!HXP", none: "!HXp"},
+		"javascript" => {params: "!JSP", none: "!JSp"},
+		"js" => {params: "!JSP", none: "!JSp"},
+	];
+
 	/**
 	* Just normal data that is being held for the packet to get stringified.
 	**/
@@ -118,4 +136,15 @@ class WebSocketPacket {
 		if (this.packetData != {}) cerial.serialize(this.packetData);
 		return '${buffer.toString()}${cerial.toString()}';
 	}
+
+	public static function isServerPacket(data:Dynamic):Bool {
+		if ((data is ServerPacketData)) return true;
+		return false;
+	}
+}
+
+@:structInit
+class ServerPacketData {
+    public var name:String;
+	public var data:Dynamic;
 }

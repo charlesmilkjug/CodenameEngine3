@@ -2,7 +2,10 @@ package funkin.backend.system.net;
 
 import hx.ws.*;
 
+import funkin.backend.system.net.WebSocketPacket.ServerPacketData;
 import funkin.backend.system.Logs;
+import haxe.Unserializer;
+import Type;
 
 /**
 * Basically a Utility for HScript to use WebSockets. Adds safeguards, error handling, and logging to debug your WebSockets.
@@ -62,9 +65,15 @@ class WebSocketUtil implements IFlxDestroyable {
 				Logs.logText('${error}'),
 			], ERROR);
 			if (_errorFunc != null) _errorFunc(error);
+			if (this.closeOnError) this.close();
 		};
 		return this.onError = func;
 	}
+
+	/**
+	* If true, the WebSocket will close when an error occurs.
+	**/
+	public var closeOnError:Bool = true;
 
 	@:dox(hide) private var url:String;
 	@:dox(hide) private var webSocket:WebSocket;
@@ -95,6 +104,8 @@ class WebSocketUtil implements IFlxDestroyable {
 				switch(message) {
 					case StrMessage(str):
 						data = str;
+						var _data = this.attemptDeserialize(data);
+						if (WebSocketPacket.isServerPacket(_data)) data = _data;
 					case BytesMessage(bytes):
 						data = bytes;
 				}
@@ -115,6 +126,61 @@ class WebSocketUtil implements IFlxDestroyable {
 		this.webSocket.onerror = this.onError;
 
 		if (immediateOpen) this.open();
+	}
+
+
+	/*
+	/ javascript code for reference
+
+		toString() {
+			if (this.add_meta_data) this.data.__timestamp = Date.now();
+			var hasName = (this.name != null && this.name.trim() != "");
+			var start = (hasName) ? "!JSP"+this.name : "!JSp";
+			start += "=>";
+
+			var cerial = new Serializer();
+			cerial.serialize(this.data);
+
+			return start+cerial.toString();
+		}
+	*/
+
+	/**
+	* @param rawData The raw data from the server
+	* @return The packet data if it was found, otherwise null and WebSocketUtil will handle it.
+	*/
+	private function attemptDeserialize(rawData:String):Null<ServerPacketData> {
+		if (!rawData.startsWith("!")) return null;
+
+		for (key=>value in WebSocketPacket.packetTypes) {
+			var hasPacketData = rawData.startsWith(value.params); // PREFIXname=>DATA
+			var hasPacketNone = rawData.startsWith(value.none); // PREFIX=>DATA
+
+			if (hasPacketNone) {
+				var data = rawData.substr(rawData.indexOf("=>") + 2);
+				var packetData:Dynamic = Unserializer.run(data);
+				if (packetData == null) packetData = {};
+				var packet:ServerPacketData = { name: null, data: packetData };
+				return packet;
+			}
+
+			if (!hasPacketData) continue;
+
+			try {
+				var data = rawData.substr(rawData.indexOf("=>") + 2);
+				var name = rawData.substring(value.params.length, rawData.indexOf("=>"));
+				var packetData:Dynamic = Unserializer.run(data);
+				if (packetData == null) packetData = {};
+				var packet:ServerPacketData = { name: name, data: packetData };
+				return packet;
+			} catch (e:Dynamic) {
+				trace('Error parsing packet: ${e}');
+				return null;
+			}
+			break;
+		}
+
+		return null;
 	}
 
 	/**
@@ -140,8 +206,10 @@ class WebSocketUtil implements IFlxDestroyable {
 			Logs.logText("[WebSocket Connection] ", BLUE),
 			Logs.logText('Closing connection to ${this.url}'),
 		], INFO);
+		
 		try {
 			this.webSocket.close();
+			this._isClosed = true;
 		} catch(e) {
 			this.onError(e);
 		}
@@ -159,10 +227,14 @@ class WebSocketUtil implements IFlxDestroyable {
 		}
 	}
 
+	private var _isClosed:Bool = false;
+
 	/**
 	* Closes the WebSocket and destroys the class instance.
 	**/
 	public function destroy() {
+		if (this._isClosed) return;
+
 		this.close();
 	}
 }
