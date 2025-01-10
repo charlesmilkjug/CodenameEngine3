@@ -73,7 +73,7 @@ class WebSocketUtil implements IFlxDestroyable {
 	/**
 	* If true, the WebSocket will close when an error occurs.
 	**/
-	public var closeOnError:Bool = true;
+	public var closeOnError:Bool = false;
 
 	@:dox(hide) private var url:String;
 	@:dox(hide) private var webSocket:WebSocket;
@@ -206,7 +206,7 @@ class WebSocketUtil implements IFlxDestroyable {
 			Logs.logText("[WebSocket Connection] ", BLUE),
 			Logs.logText('Closing connection to ${this.url}'),
 		], INFO);
-		
+
 		try {
 			this.webSocket.close();
 			this._isClosed = true;
