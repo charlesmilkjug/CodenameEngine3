@@ -203,7 +203,7 @@ class WebSocketUtil implements IFlxDestroyable {
 				Logs.logText('Connected to ${this.url}'),
 			], INFO);
 		};
-		if (_threadedConnection) Main.execAsync(_func);
+		if (this._threadedConnection) Main.execAsync(_func);
 		else _func();
 	}
 
@@ -236,7 +236,7 @@ class WebSocketUtil implements IFlxDestroyable {
 				this.onError(e);
 			}
 		};
-		if (_threadedSend) Main.execAsync(_func);
+		if (this._threadedSend) Main.execAsync(_func);
 		else _func();
 	}
 
