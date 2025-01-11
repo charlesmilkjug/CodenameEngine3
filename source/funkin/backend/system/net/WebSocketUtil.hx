@@ -80,6 +80,12 @@ class WebSocketUtil implements IFlxDestroyable {
 
 	@:dox(hide) private var url:String;
 	@:dox(hide) private var webSocket:WebSocket;
+	
+	/**
+	* If true, when you call `open` the WebSocket will attempt to connect in a new thread.
+	* Usefull for trying to connect to a WebSocket Server whilst the game is running.
+	**/
+	public var _threadedConnection:Bool = true;
 
 	/**
 	* @param url The URL of the WebSocket. Usually `ws://localhost:port`.
@@ -194,11 +200,21 @@ class WebSocketUtil implements IFlxDestroyable {
 			Logs.logText("[WebSocket Connection] ", BLUE),
 			Logs.logText('Connecting to ${this.url}'),
 		], INFO);
-		try {
-			this.webSocket.open();
-		} catch(e) {
-			this.onError(e);
-		}
+		
+		var _func = () -> {
+			try {
+				this.webSocket.open();
+			} catch(e) {
+				this.onError(e);
+				return;
+			}
+			Logs.traceColored([
+				Logs.logText("[WebSocket Connection] ", YELLOW),
+				Logs.logText('Connected to ${this.url}'),
+			], INFO);
+		};
+		if (_threadedConnection) Main.execAsync(_func);
+		else _func();
 	}
 
 	/**
