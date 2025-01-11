@@ -14,6 +14,9 @@ import Type;
 *
 * This does NOT support making a Server Side WebSocket. Its only for Client Side WebSockets. If you want to make a Server you need to that yourself.
 * I'd suggest using JavaScript for it. Though any program will do.
+*
+* Check out the WebSocket Server Template for Codename Engine here:
+* https://github.com/ItsLJcool/WebSocket-Server-Template-for-CNE
 **/
 class WebSocketUtil implements IFlxDestroyable {
 	/**
