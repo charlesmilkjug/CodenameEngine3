@@ -87,13 +87,15 @@ class WebSocketUtil implements IFlxDestroyable {
 	* Usefull for trying to connect to a WebSocket Server whilst the game is running.
 	* WARNING: CAN CAUSE ERRORS IN HSCRIPT!!
 	**/
-	public var _threadedConnection:Bool = true;
+	public var _threadedConnection:Bool = false;
 
 	/**
 	* If true, when you call `send` the WebSocket will attempt to send in a new thread.
 	* WARNING: CAN CAUSE ERRORS IN HSCRIPT!!
 	**/
 	public var _threadedSend:Bool = false;
+	
+	@:dox(hide) public var __packets:Array<Dynamic> = [];
 
 	/**
 	* @param url The URL of the WebSocket. Usually `ws://localhost:port`.
@@ -130,6 +132,7 @@ class WebSocketUtil implements IFlxDestroyable {
 			} catch(e) {
 				this.onError(e);
 			}
+			__packets.push(data);
 		};
 
 		this.webSocket.onclose = function() {
@@ -143,6 +146,10 @@ class WebSocketUtil implements IFlxDestroyable {
 		this.webSocket.onerror = this.onError;
 
 		if (immediateOpen) this.open();
+	}
+
+	public function getRecentPacket():Dynamic {
+		return __packets.shift();
 	}
 
 	/**
@@ -229,19 +236,12 @@ class WebSocketUtil implements IFlxDestroyable {
 	* Sends data to the server
 	**/
 	public function send(data) {
-		var _func = () -> {
-			if (data is WebSocketPacket) data = data.toString();
-			try {
-				this.webSocket.send(data);
-			} catch(e) {
-				this.onError(e);
-			}
-		};
-		// because its already threaded.
-		if (this._threadedSend) _func();
-		else new FlxTimer().start(0.01, (tmr:FlxTimer) -> {
-			_func();
-		});
+		if (data is WebSocketPacket) data = data.toString();
+		try {
+			this.webSocket.send(data);
+		} catch(e) {
+			this.onError(e);
+		}
 	}
 
 	private var _isClosed:Bool = false;
