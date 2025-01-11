@@ -5,7 +5,8 @@ import hx.ws.*;
 import funkin.backend.system.net.WebSocketPacket.ServerPacketData;
 import funkin.backend.system.Logs;
 import haxe.Unserializer;
-import Type;
+
+import flixel.util.FlxTimer;
 
 /**
 * Basically a Utility for HScript to use WebSockets. Adds safeguards, error handling, and logging to debug your WebSockets.
@@ -236,8 +237,11 @@ class WebSocketUtil implements IFlxDestroyable {
 				this.onError(e);
 			}
 		};
-		if (this._threadedSend) Main.execAsync(_func);
-		else _func();
+		// because its already threaded.
+		if (this._threadedSend) _func();
+		else new FlxTimer().start(0.0001, (tmr:FlxTimer) -> {
+			_func();
+		});
 	}
 
 	private var _isClosed:Bool = false;
