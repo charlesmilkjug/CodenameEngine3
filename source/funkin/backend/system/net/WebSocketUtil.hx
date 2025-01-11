@@ -84,8 +84,15 @@ class WebSocketUtil implements IFlxDestroyable {
 	/**
 	* If true, when you call `open` the WebSocket will attempt to connect in a new thread.
 	* Usefull for trying to connect to a WebSocket Server whilst the game is running.
+	* WARNING: CAN CAUSE ERRORS IN HSCRIPT!!
 	**/
 	public var _threadedConnection:Bool = true;
+
+	/**
+	* If true, when you call `send` the WebSocket will attempt to send in a new thread.
+	* WARNING: CAN CAUSE ERRORS IN HSCRIPT!!
+	**/
+	public var _threadedSend:Bool = false;
 
 	/**
 	* @param url The URL of the WebSocket. Usually `ws://localhost:port`.
@@ -136,23 +143,6 @@ class WebSocketUtil implements IFlxDestroyable {
 
 		if (immediateOpen) this.open();
 	}
-
-
-	/*
-	/ javascript code for reference
-
-		toString() {
-			if (this.add_meta_data) this.data.__timestamp = Date.now();
-			var hasName = (this.name != null && this.name.trim() != "");
-			var start = (hasName) ? "!JSP"+this.name : "!JSp";
-			start += "=>";
-
-			var cerial = new Serializer();
-			cerial.serialize(this.data);
-
-			return start+cerial.toString();
-		}
-	*/
 
 	/**
 	* @param rawData The raw data from the server
@@ -238,12 +228,16 @@ class WebSocketUtil implements IFlxDestroyable {
 	* Sends data to the server
 	**/
 	public function send(data) {
-		if (data is WebSocketPacket) data = data.toString();
-		try {
-			this.webSocket.send(data);
-		} catch(e) {
-			this.onError(e);
-		}
+		var _func = () -> {
+			if (data is WebSocketPacket) data = data.toString();
+			try {
+				this.webSocket.send(data);
+			} catch(e) {
+				this.onError(e);
+			}
+		};
+		if (_threadedSend) Main.execAsync(_func);
+		else _func();
 	}
 
 	private var _isClosed:Bool = false;
