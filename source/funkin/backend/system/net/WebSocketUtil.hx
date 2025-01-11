@@ -239,7 +239,7 @@ class WebSocketUtil implements IFlxDestroyable {
 		};
 		// because its already threaded.
 		if (this._threadedSend) _func();
-		else new FlxTimer().start(0.0001, (tmr:FlxTimer) -> {
+		else new FlxTimer().start(0.01, (tmr:FlxTimer) -> {
 			_func();
 		});
 	}
