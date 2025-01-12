@@ -235,10 +235,12 @@ class WebSocketUtil implements IFlxDestroyable {
 	/**
 	* Sends data to the server
 	**/
-	public function send(data) {
-		if (data is WebSocketPacket) data = data.toString();
+	public function send(data) {	
+		var _data = null;
+		if (data is WebSocketPacket) _data = data.toString();
+		else _data = data;
 		try {
-			this.webSocket.send(data);
+			this.webSocket.send(_data);
 		} catch(e) {
 			this.onError(e);
 		}
