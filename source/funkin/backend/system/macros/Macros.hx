@@ -46,8 +46,10 @@ class Macros {
 	}
 
 	public static function initMacros() {
-		if(Context.defined("hl"))
+		if (Context.defined("hl"))
 			HashLinkFixer.init();
+
+		InternalMacro.init();
 	}
 }
 #end
