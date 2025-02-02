@@ -20,5 +20,6 @@
 	<!-- <lib name="dox" /> -->
 	<lib name="format" />
 	<lib name="markdown" />
+	<lib name="nape-haxe4" />
 	<lib name="extension-androidtools" />
 </libraries>
