@@ -1,24 +1,10 @@
 package openfl.utils;
 
-#if lime
-import haxe.io.Bytes;
-
-#if (lime_vorbis && lime > "7.9.0")
-import lime.media.vorbis.VorbisFile;
+#if !macro
+import funkin.backend.system.Main;
+import funkin.options.Options;
+import funkin.backend.system.OptimizedBitmapData;
 #end
-
-import lime.app.Promise;
-import lime.graphics.PixelFormat;
-import lime.graphics.ImageBuffer;
-import lime.media.AudioBuffer;
-import lime.utils.AssetLibrary as LimeAssetLibrary;
-import lime.utils.Assets as LimeAssets;
-import lime.utils.UInt8Array as LUInt8Array;
-
-import lime._internal.backend.native.NativeCFFI;
-import lime.system.CFFI;
-#end
-
 import openfl.utils._internal.Log;
 import openfl.display.BitmapData;
 import openfl.display.MovieClip;
@@ -27,11 +13,15 @@ import openfl.events.Event;
 import openfl.events.EventDispatcher;
 import openfl.media.Sound;
 import openfl.text.Font;
-
-import openfl.system.System;
-import openfl.Lib;
-
-import funkin.backend.utils.BitmapUtil;
+#if lime
+import lime.app.Promise;
+import lime.utils.AssetLibrary as LimeAssetLibrary;
+import lime.utils.Assets as LimeAssets;
+#end
+#if lime_vorbis
+import lime.media.AudioBuffer;
+import lime.media.vorbis.VorbisFile;
+#end
 
 /**
 	The Assets class provides a cross-platform interface to access
@@ -53,20 +43,13 @@ import funkin.backend.utils.BitmapUtil;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-
-#if lime
-@:access(lime._internal.backend.native.NativeCFFI)
-#end
-
 @:access(openfl.display.BitmapData)
 @:access(openfl.display.Sprite)
 @:access(openfl.text.Font)
 @:access(openfl.utils.AssetLibrary)
-@:accesS(openfl.display3D.textures.TextureBase.__uploadFromImage)
 class Assets
 {
 	public static var cache:IAssetCache = new AssetCache();
-	public static var defaultHardware:Bool = true;
 
 	@:noCompletion private static var dispatcher:EventDispatcher #if !macro = new EventDispatcher() #end;
 	private static var libraryBindings:Map<String, AssetLibrary> = new Map();
@@ -108,67 +91,47 @@ class Assets
 		@usage		var bitmap = new Bitmap (Assets.getBitmapData ("image.png"));
 		@param	id		The ID or asset path for the bitmap
 		@param	useCache		(Optional) Whether to allow use of the asset cache (Default: true)
-		@param	key		(Optional) The Key for the bitmap
-		@param	hardware		Hardware Caching (Default: false)
+		@param	pushToGPU		Whenever the image should be immediately pushed to GPU.
 		@return		A new BitmapData object
 	**/
-	public static function getBitmapData(id:String, useCache:Bool = true, ?key:String, ?hardware:Bool):BitmapData
+	public static function getBitmapData(id:String, useCache:Bool = true, pushToGPU:Bool = true):BitmapData
 	{
 		#if (lime && tools && !display)
-		if (key == null) key = id;
-		if (hardware == null) hardware = defaultHardware;
+		if (useCache && cache.enabled && cache.hasBitmapData(id))
+		{
+			var bitmapData = cache.getBitmapData(id);
 
-		if (useCache && cache.enabled && cache.hasBitmapData(key)) {
-			var bitmapData = cache.getBitmapData(key);
-			if (isValidBitmapData(bitmapData)) return bitmapData;
+			if (isValidBitmapData(bitmapData) && (pushToGPU || bitmapData.readable))
+			{
+				return bitmapData;
+			}
 		}
 
-		return registerBitmapData(getRawBitmapData(id), key, useCache, hardware);
-		#end
-
-		return null;
-	}
-
-	/**
-		Registers an instance of an embedded bitmap
-		@usage		Assets.registerBitmapData(bitmapData);
-		@param	bitmap		The bitmap for the asset path
-		@param	key		The key for the bitmap
-		@param	useCache		(Optional) Whether to allow use of the asset cache (Default: true)
-		@param	hardware		Hardware Caching (Default: false)
-		@return		A BitmapData object
-	**/
-	public static function registerBitmapData(bitmap:BitmapData, key:String, useCache:Bool = true, ?hardware:Bool):BitmapData {
-		if (bitmap == null || key == null) return bitmap;
-		if (hardware == null) hardware = defaultHardware;
-
-		#if (lime && tools && !display)
-
-		#if !flash if (hardware) BitmapUtil.toHardware(bitmap); #end
-
-		if (useCache && cache.enabled)
-			cache.setBitmapData(key, bitmap);
-		#end
-
-		return bitmap;
-	}
-
-	/**
-	 	Gets an instance of an raw embedded bitmap, skips the cache
-		@usage		var bitmap = new Bitmap (Assets.getRawBitmapData ("image.png"));
-		@param	id		The ID or asset path for the bitmap
-		@return		A BitmapData object
-	**/
-	public static function getRawBitmapData(id:String):BitmapData {
-		#if (lime && tools && !display)
 		var image = LimeAssets.getImage(id, false);
+
 		if (image != null)
+		{
 			#if flash
-			return cast image.src;
+			var bitmapData = image.src;
 			#else
-			return BitmapData.fromImage(image);
+			var bitmapData:BitmapData = null;
+			#if !macro if (pushToGPU && !Main.forceGPUOnlyBitmapsOff && Options.gpuOnlyBitmaps) {
+				bitmapData = new OptimizedBitmapData(0, 0, true, 0);
+				bitmapData.__fromImage(image);
+			} else #end {
+				bitmapData = BitmapData.fromImage(image);
+			}
 			#end
+
+			if (useCache && cache.enabled)
+			{
+				cache.setBitmapData(id, bitmapData);
+			}
+
+			return bitmapData;
+		}
 		#end
+
 		return null;
 	}
 
@@ -176,10 +139,9 @@ class Assets
 		Gets an instance of an embedded binary asset
 		@usage		var bytes = Assets.getBytes ("file.zip");
 		@param	id		The ID or asset path for the asset
-		@param	useCache		(Optional) Whether to allow use of the asset cache (Default: false)
 		@return		A new ByteArray object
 	**/
-	public static function getBytes(id:String, useCache:Bool = false):ByteArray
+	public static function getBytes(id:String):ByteArray
 	{
 		#if lime
 		return LimeAssets.getBytes(id);
@@ -195,14 +157,12 @@ class Assets
 		@param	useCache		(Optional) Whether to allow use of the asset cache (Default: true)
 		@return		A new Font object
 	**/
-	public static function getFont(id:String, useCache:Bool = true, ?key:String):Font
+	public static function getFont(id:String, useCache:Bool = true):Font
 	{
 		#if (lime && tools && !display && !macro)
-		key = key != null ? key : id;
-		
-		if (useCache && cache.enabled && cache.hasFont(key))
+		if (useCache && cache.enabled && cache.hasFont(id))
 		{
-			return cache.getFont(key);
+			return cache.getFont(id);
 		}
 
 		var limeFont = LimeAssets.getFont(id, false);
@@ -218,7 +178,7 @@ class Assets
 
 			if (useCache && cache.enabled)
 			{
-				cache.setFont(key, font);
+				cache.setFont(id, font);
 			}
 
 			return font;
@@ -281,9 +241,18 @@ class Assets
 		return null;
 	}
 
-	public static function getMusic(id:String, useCache:Bool = true, ?key:String):Sound
+	public static function getMusic(id:String, useCache:Bool = true):Sound
 	{
-		return getSound(id, useCache, key, true);
+		#if (lime_vorbis && lime > "7.9.0")
+		var path = getPath(id);
+		// TODO: What if it is a WAV or non-Vorbis file?
+		var vorbisFile = VorbisFile.fromFile(path);
+		var buffer = AudioBuffer.fromVorbisFile(vorbisFile);
+		return Sound.fromAudioBuffer(buffer);
+		#else
+		// TODO: Streaming sound
+		return getSound(id, useCache);
+		#end
 	}
 
 	/**
@@ -306,67 +275,40 @@ class Assets
 		@usage		var sound = Assets.getSound ("sound.wav");
 		@param	id		The ID or asset path for the sound
 		@param	useCache		(Optional) Whether to allow use of the asset cache (Default: true)
-		@param	key		(Optional) The Key for the sound
-		@param	stream		Streaming Sounds (Default: false)
-		
 		@return		A new Sound object
 	**/
-	public static function getSound(id:String, useCache:Bool = true, ?key:String, stream:Bool = false, fromFile:Bool = false):Sound
+	public static function getSound(id:String, useCache:Bool = true):Sound
 	{
 		#if (lime && tools && !display)
-		key = key != null ? key : id;
-		
-		if (useCache && cache.enabled && cache.hasSound(key)) {
-			var sound = cache.getSound(key);
+		if (useCache && cache.enabled && cache.hasSound(id))
+		{
+			var sound = cache.getSound(id);
 
-			if (isValidSound(sound)) return sound;
+			if (isValidSound(sound))
+			{
+				return sound;
+			}
 		}
 
-		var sound = getRawSound(id, stream, fromFile);
+		var buffer = LimeAssets.getAudioBuffer(id, false);
 
-		if (sound != null) {
-			if (useCache && cache.enabled) cache.setSound(key, sound);
+		if (buffer != null)
+		{
+			#if flash
+			var sound = buffer.src;
+			#else
+			var sound = Sound.fromAudioBuffer(buffer);
+			#end
+
+			if (useCache && cache.enabled)
+			{
+				cache.setSound(id, sound);
+			}
+
 			return sound;
 		}
 		#end
 
-		return null;
-	}
-
-	public static function getRawAudioBuffer(id:String, stream:Bool = false, fromFile:Bool = false):AudioBuffer
-	{
-		var colonIdx = id.indexOf(':'), path = id.substr(colonIdx + 1), buffer:AudioBuffer = null;
-		if (fromFile || stream) {
-			var library = getLibrary(id.substr(0, colonIdx));
-			if (library != null && library.exists(path, null)) path = library.getPath(path);
-		}
-		#if (lime_vorbis && lime > "7.9.0")
-		if (stream) buffer = AudioBuffer.fromVorbisFile(VorbisFile.fromFile(path));
-		else
-		#end
-		#if (js && html5 && lime_howlerjs)
-		if (fromFile) buffer = AudioBuffer.fromFile(path, stream);
-		if (buffer == null) buffer = LimeAssets.getAudioBuffer(id, false);
-		#elseif sys
-		if (fromFile) buffer = AudioBuffer.fromFile(path);
-		if (buffer == null) buffer = LimeAssets.getAudioBuffer(id, false);
-		#else
-		buffer = LimeAssets.getAudioBuffer(id, false);
-		#end
-		
-		return buffer;
-	}
-	
-	public static function getRawSound(id:String, stream:Bool = false, fromFile:Bool = false):Sound
-	{
-		var buffer = getRawAudioBuffer(id, stream, fromFile);
-		if (buffer != null)
-			#if flash
-			return buffer.src;
-			#else
-			return Sound.fromAudioBuffer(buffer);
-			#end
-		
 		return null;
 	}
 
@@ -399,7 +341,6 @@ class Assets
 		#end
 	}
 
-	#if (openfl >= "9.2.0")
 	/**
 		Connects a user-defined class to a related asset class.
 
@@ -438,7 +379,6 @@ class Assets
 			Log.warn("No asset is registered as \"" + className + "\"");
 		}
 	}
-	#end
 
 	/**
 		Returns whether an asset is "local", and therefore can be loaded synchronously
@@ -495,7 +435,7 @@ class Assets
 			return false;
 		}
 		#else
-		@:privateAccess return (bitmapData != null && (#if !lime_hybrid bitmapData.image != null #else bitmapData.__handle != null #end || bitmapData.__texture != null));
+		return (bitmapData != null && #if !lime_hybrid bitmapData.image != null #else bitmapData.__handle != null #end);
 		#end
 		#else
 		return true;
@@ -531,22 +471,18 @@ class Assets
 		@usage	Assets.loadBitmapData ("image.png").onComplete (handleImage);
 		@param	id 		The ID or asset path for the asset
 		@param	useCache		(Optional) Whether to allow use of the asset cache (Default: true)
-		@param	key		(Optional) The Key for the bitmap
-		@param	hardware		Hardware Caching (Default: false)
 		@return		Returns a Future<BitmapData>
 	**/
-	public static function loadBitmapData(id:String, useCache:Null<Bool> = true, ?key:String, hardware:Bool = false):Future<BitmapData>
+	public static function loadBitmapData(id:String, useCache:Null<Bool> = true):Future<BitmapData>
 	{
 		if (useCache == null) useCache = true;
-		
+
 		#if (lime && tools && !display)
-		key = key != null ? key : id;
-		
 		var promise = new Promise<BitmapData>();
 
-		if (useCache && cache.enabled && cache.hasBitmapData(key))
+		if (useCache && cache.enabled && cache.hasBitmapData(id))
 		{
-			var bitmapData = cache.getBitmapData(key);
+			var bitmapData = cache.getBitmapData(id);
 
 			if (isValidBitmapData(bitmapData))
 			{
@@ -562,10 +498,21 @@ class Assets
 				#if flash
 				var bitmapData = image.src;
 				#else
-				var bitmapData:BitmapData = BitmapData.fromImage(image);
+				var bitmapData:BitmapData = null;
+				#if !macro if (!Main.forceGPUOnlyBitmapsOff && Options.gpuOnlyBitmaps) {
+					bitmapData = new OptimizedBitmapData(0, 0, true, 0);
+					bitmapData.__fromImage(image);
+				} else #end {
+					bitmapData = BitmapData.fromImage(image);
+				}
 				#end
 
-				promise.complete(registerBitmapData(bitmapData, key, useCache, hardware));
+				if (useCache && cache.enabled)
+				{
+					cache.setBitmapData(id, bitmapData);
+				}
+
+				promise.complete(bitmapData);
 			}
 			else
 			{
@@ -575,7 +522,7 @@ class Assets
 
 		return promise.future;
 		#else
-		return Future.withValue(getBitmapData(id, useCache, key));
+		return Future.withValue(getBitmapData(id, useCache));
 		#end
 	}
 
@@ -608,18 +555,16 @@ class Assets
 		@param	useCache		(Optional) Whether to allow use of the asset cache (Default: true)
 		@return		Returns a Future<Font>
 	**/
-	public static function loadFont(id:String, useCache:Null<Bool> = true, ?key:String):Future<Font>
+	public static function loadFont(id:String, useCache:Null<Bool> = true):Future<Font>
 	{
 		if (useCache == null) useCache = true;
 
 		#if (lime && tools && !display && !macro)
-		key = key != null ? key : id;
-		
 		var promise = new Promise<Font>();
 
-		if (useCache && cache.enabled && cache.hasFont(key))
+		if (useCache && cache.enabled && cache.hasFont(id))
 		{
-			promise.complete(cache.getFont(key));
+			promise.complete(cache.getFont(id));
 			return promise.future;
 		}
 
@@ -635,7 +580,7 @@ class Assets
 
 				if (useCache && cache.enabled)
 				{
-					cache.setFont(key, font);
+					cache.setFont(id, font);
 				}
 
 				promise.complete(font);
@@ -645,7 +590,7 @@ class Assets
 
 		return promise.future;
 		#else
-		return Future.withValue(getFont(id, useCache, key));
+		return Future.withValue(getFont(id, useCache));
 		#end
 	}
 
@@ -781,25 +726,12 @@ class Assets
 		@param	useCache		(Optional) Whether to allow use of the asset cache (Default: true)
 		@return		Returns a Future<Sound>
 	**/
-	public static function loadSound(id:String, useCache:Null<Bool> = true, ?key:String):Future<Sound>
+	public static function loadSound(id:String, useCache:Null<Bool> = true):Future<Sound>
 	{
 		if (useCache == null) useCache = true;
 
 		#if lime
-		key = key != null ? key : id;
-		
 		var promise = new Promise<Sound>();
-		
-		if (useCache && cache.enabled && cache.hasSound(key))
-		{
-			var sound = cache.getSound(key);
-
-			if (isValidSound(sound))
-			{
-				promise.complete(sound);
-				return promise.future;
-			}
-		}
 
 		LimeAssets.loadAudioBuffer(id, useCache)
 			.onComplete(function(buffer)
@@ -814,7 +746,7 @@ class Assets
 
 					if (useCache && cache.enabled)
 					{
-						cache.setSound(key, sound);
+						cache.setSound(id, sound);
 					}
 
 					promise.complete(sound);
@@ -828,7 +760,7 @@ class Assets
 			.onProgress(promise.progress);
 		return promise.future;
 		#else
-		return Future.withValue(getSound(id, useCache, key));
+		return Future.withValue(getSound(id, useCache));
 		#end
 	}
 
@@ -849,7 +781,6 @@ class Assets
 		#end
 	}
 
-	#if (openfl >= "9.2.0")
 	/**
 		Registers an AssetLibrary binding for use with @:bind or Assets.bind
 		@param	className		The class name to use for the binding
@@ -859,7 +790,6 @@ class Assets
 	{
 		libraryBindings.set(className, library);
 	}
-	#end
 
 	/**
 		Registers a new AssetLibrary with the Assets class
@@ -904,7 +834,6 @@ class Assets
 		#end
 	}
 
-	#if (openfl >= "9.2.0")
 	/**
 		Unregisters an AssetLibrary binding for use with @:bind or Assets.bind
 		@param	className		The class name to use for the binding
@@ -917,7 +846,6 @@ class Assets
 			libraryBindings.remove(className);
 		}
 	}
-	#end
 
 	// Event Handlers
 	@:noCompletion private static function LimeAssets_onChange():Void
