@@ -1,6 +1,5 @@
 package funkin.options;
 
-import openfl.utils.Assets;
 import openfl.Lib;
 import flixel.util.FlxSave;
 import flixel.input.keyboard.FlxKey;
@@ -157,7 +156,6 @@ class Options
 		FlxG.game.stage.quality = (FlxG.enableAntialiasing = antialiasing) ? LOW : BEST;
 		FlxG.autoPause = autoPause;
 		FlxG.drawFramerate = FlxG.updateFramerate = framerate;
-		Assets.defaultHardware = gpuOnlyBitmaps;
 	}
 
 	public static function applyKeybinds() {
