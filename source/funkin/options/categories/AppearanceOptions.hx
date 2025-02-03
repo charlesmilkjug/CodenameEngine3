@@ -36,10 +36,12 @@ class AppearanceOptions extends OptionsScreen {
 			"If checked, will disable certain background elements in stages to reduce memory usage.",
 			"lowMemoryMode"));
 		#if sys
-		add(new Checkbox(
-			"VRAM-Only Sprites",
-			"If checked, will only store the bitmaps in the GPU, freeing a LOT of memory (EXPERIMENTAL). Turning this off will consume a lot of memory, especially on bigger sprites. If you aren't sure, leave this on.",
-			"gpuOnlyBitmaps"));
+		if (!Main.forceGPUOnlyBitmapsOff) {
+			add(new Checkbox(
+				"VRAM-Only Sprites",
+				"If checked, will only store the bitmaps in the GPU, freeing a LOT of memory (EXPERIMENTAL). Turning this off will consume a lot of memory, especially on bigger sprites. If you aren't sure, leave this on.",
+				"gpuOnlyBitmaps"));
+		}
 		#end
 		add(new Checkbox(
 			"Auto Pause",
