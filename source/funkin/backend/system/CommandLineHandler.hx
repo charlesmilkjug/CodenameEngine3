@@ -57,8 +57,6 @@ class CommandLineHandler {
 				#end
 				case "-nocolor":
 					Main.noTerminalColor = true;
-				case "-nogpubitmap":
-					Main.forceGPUOnlyBitmapsOff = true;
 				case "-livereload":
 					// do nothing
 				default:

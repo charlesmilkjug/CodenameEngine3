@@ -116,6 +116,7 @@ class Assets
 	{
 		#if (lime && tools && !display)
 		if (key == null) key = id;
+		if (hardware == null) hardware = defaultHardware;
 
 		if (useCache && cache.enabled && cache.hasBitmapData(key)) {
 			var bitmapData = cache.getBitmapData(key);
