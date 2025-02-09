@@ -865,6 +865,13 @@ class CoolUtil
 
 		return result.join(seperator);
 	}
+	
+	@:noUsing public static function getClosestAngle(angle:Float, targetAngle:Float):Float {
+		var diff:Float = angle - targetAngle;
+		if (diff < -180) diff += 360;
+		else if (diff > 180) diff -= 360;
+		return angle - diff;
+	}
 }
 
 /**
