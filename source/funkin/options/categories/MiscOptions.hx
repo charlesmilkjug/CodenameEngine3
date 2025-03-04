@@ -27,6 +27,8 @@ class MiscOptions extends OptionsScreen {
 			"Reset Save Data",
 			"Select this option to reset save data. This will remove all of your highscores.",
 			function() {
+				trace("reset save!");
+				updateDescText("Save data has been reset! I think...");
 				FunkinSave.save.erase();
 				FunkinSave.init();
 				FunkinSave.flush();
