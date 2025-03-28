@@ -19,7 +19,7 @@ class MiscOptions extends OptionsScreen {
 					FlxG.switchState(new funkin.backend.system.updating.UpdateAvailableScreen(report));
 				} else {
 					CoolUtil.playMenuSFX(CANCEL);
-					updateDescText("No update found.");
+					updateMenuDesc("No update found.");
 				}
 		}));,
 		#end
@@ -28,7 +28,7 @@ class MiscOptions extends OptionsScreen {
 			"Select this option to reset save data. This will remove all of your highscores.",
 			function() {
 				trace("reset save!");
-				updateDescText("Save data has been reset! I think...");
+				updateMenuDesc("Save data has been reset! I think...");
 				FunkinSave.save.erase();
 				FunkinSave.init();
 				FunkinSave.flush();
